@@ -1,0 +1,89 @@
+﻿using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+
+namespace GitHubStalker_WPF
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        string username;
+        public MainWindow()
+        {
+            InitializeComponent();
+            
+        }
+
+
+
+        private void buttonSearch_Click(object sender, RoutedEventArgs e)
+        {
+            username = textBoxUsername.Text;
+            WebClient wcu = new WebClient();
+            wcu.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+            string json = wcu.DownloadString("https://api.github.com/users/" + username);
+
+            WebClient wcc = new WebClient();
+            wcc.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+            string repos = wcc.DownloadString("https://api.github.com/users/" + username + "/repos");
+
+            var o = JObject.Parse(json);
+            var re = JArray.Parse(repos);
+
+            textBlockUserResult.Text = "Name: " + o["name"].ToString() + "\n";
+            textBlockUserResult.Text += "Url: " + o["url"].ToString() + "\n";
+            textBlockUserResult.Text += "Followers: " + o["followers"].ToString()+"\n";
+            textBlockUserResult.Text += "Repositories: " + o["public_repos"].ToString() + "\n";
+
+            dataGridRepos.IsReadOnly = true;
+            dataGridRepos.ItemsSource = re;
+            dataGridRepos.Columns.Add(addColumn("Repository", "name"));
+            dataGridRepos.Columns.Add(addColumn("Stars", "stargazers_count"));
+            dataGridRepos.Columns.Add(addColumn("Watchers", "watchers_count"));
+        }
+
+       
+
+        public DataGridTextColumn addColumn(string header, string source)
+        {
+            DataGridTextColumn x = new DataGridTextColumn();
+            x.Header = header;
+            x.Binding = new Binding(source);
+            return x;
+        }
+
+        private void dataGridRepos_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            Array selected = dataGridRepos.SelectedItem as Array;
+//            string repo = selected.name;
+
+            WebClient wc = new WebClient();
+            wc.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+            string cmt = wc.DownloadString("https://api.github.com/repos/" + username + "/" + "08-HotelOrigin" + "/commits");
+            var c = JArray.Parse(cmt);
+
+            WebClient wci = new WebClient();
+            wci.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+            string iss = wci.DownloadString("https://api.github.com/repos/" + username + "/" + "08-HotelOrigin" + "/issues");
+            var issue = JArray.Parse(iss);
+
+            textBlockRepoDeets.Text = "Commits: " + c.Count.ToString();
+            textBlockRepoDeets.Text += "Issues " + issue.Count.ToString();
+        }
+    }
+}
