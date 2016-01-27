@@ -20,6 +20,12 @@ namespace GitHubStalker_WPF
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    public class SelName
+    {
+        string name { get; set; }
+    }
+
+
     public partial class MainWindow : Window
     {
         string username;
@@ -33,28 +39,37 @@ namespace GitHubStalker_WPF
 
         private void buttonSearch_Click(object sender, RoutedEventArgs e)
         {
-            username = textBoxUsername.Text;
-            WebClient wcu = new WebClient();
-            wcu.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-            string json = wcu.DownloadString("https://api.github.com/users/" + username);
+            try
+            {
+                username = textBoxUsername.Text;
+                WebClient wcu = new WebClient();
+                wcu.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+                string json = wcu.DownloadString("https://api.github.com/users/" + username);
 
-            WebClient wcc = new WebClient();
-            wcc.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-            string repos = wcc.DownloadString("https://api.github.com/users/" + username + "/repos");
+                WebClient wcc = new WebClient();
+                wcc.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+                string repos = wcc.DownloadString("https://api.github.com/users/" + username + "/repos");
 
-            var o = JObject.Parse(json);
-            var re = JArray.Parse(repos);
+                var o = JObject.Parse(json);
+                var re = JArray.Parse(repos);
 
-            textBlockUserResult.Text = "Name: " + o["name"].ToString() + "\n";
-            textBlockUserResult.Text += "Url: " + o["url"].ToString() + "\n";
-            textBlockUserResult.Text += "Followers: " + o["followers"].ToString()+"\n";
-            textBlockUserResult.Text += "Repositories: " + o["public_repos"].ToString() + "\n";
+                textBlockUserResult.Text = "Name: " + o["name"].ToString() + "\n";
+                textBlockUserResult.Text += "Url: " + o["url"].ToString() + "\n";
+                textBlockUserResult.Text += "Followers: " + o["followers"].ToString() + "\n";
+                textBlockUserResult.Text += "Repositories: " + o["public_repos"].ToString() + "\n";
 
-            dataGridRepos.IsReadOnly = true;
-            dataGridRepos.ItemsSource = re;
-            dataGridRepos.Columns.Add(addColumn("Repository", "name"));
-            dataGridRepos.Columns.Add(addColumn("Stars", "stargazers_count"));
-            dataGridRepos.Columns.Add(addColumn("Watchers", "watchers_count"));
+                dataGridRepos.IsReadOnly = true;
+                dataGridRepos.ItemsSource = re;
+                dataGridRepos.Columns.Add(addColumn("Repository", "name"));
+                dataGridRepos.Columns.Add(addColumn("Stars", "stargazers_count"));
+                dataGridRepos.Columns.Add(addColumn("Watchers", "watchers_count"));
+
+                textBlockRepoDeets.Text = "";
+            }
+            catch
+            {
+                MessageBox.Show("User not found, please check your query and try again.");
+            }
         }
 
        
@@ -69,21 +84,36 @@ namespace GitHubStalker_WPF
 
         private void dataGridRepos_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            Array selected = dataGridRepos.SelectedItem as Array;
-//            string repo = selected.name;
+            dynamic x = dataGridRepos.SelectedItem;
+            string repo = x.name;
 
-            WebClient wc = new WebClient();
-            wc.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-            string cmt = wc.DownloadString("https://api.github.com/repos/" + username + "/" + "08-HotelOrigin" + "/commits");
-            var c = JArray.Parse(cmt);
+            try
+            {
+                WebClient wc = new WebClient();
+                wc.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+                string cmt = wc.DownloadString("https://api.github.com/repos/" + username + "/" + repo + "/commits");
+                var c = JArray.Parse(cmt);
+                textBlockRepoDeets.Text = "Commits: " + c.Count.ToString();
+            }
+            catch
+            {
+                textBlockRepoDeets.Text = "Commits: ";
+            }
 
-            WebClient wci = new WebClient();
-            wci.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-            string iss = wci.DownloadString("https://api.github.com/repos/" + username + "/" + "08-HotelOrigin" + "/issues");
-            var issue = JArray.Parse(iss);
-
-            textBlockRepoDeets.Text = "Commits: " + c.Count.ToString();
-            textBlockRepoDeets.Text += "Issues " + issue.Count.ToString();
+            try
+            {
+                WebClient wci = new WebClient();
+                wci.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+                string iss = wci.DownloadString("https://api.github.com/repos/" + username + "/" + repo + "/issues");
+                var issue = JArray.Parse(iss);
+                textBlockRepoDeets.Text += "\nIssues: " + issue.Count.ToString();
+            }
+            catch
+            {
+                textBlockRepoDeets.Text += "\nIssues: " ;
+            }
+            
+            
         }
     }
 }
